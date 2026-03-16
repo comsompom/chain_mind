@@ -1,5 +1,5 @@
 """Dashboard API: balance, recent txs, portfolio summary."""
-from flask import Blueprint
+from flask import Blueprint, jsonify
 
 from backend.services import chain
 from backend.services import hashkey_sandbox
@@ -114,12 +114,16 @@ def get_summary():
         server_time = None
     try:
         from backend.services import ai_payments
-        payment_rules_count = len(ai_payments.list_rules())
-        payment_history_count = len(ai_payments.list_payments())
+        payment_rules = ai_payments.list_rules()
+        payment_rules_count = len(payment_rules)
+        payment_history = ai_payments.list_payments()
+        payment_history_count = len(payment_history)
     except Exception:
+        payment_rules = []
+        payment_history = []
         payment_rules_count = 0
         payment_history_count = 0
-    return {
+    out = {
         "balance": balance_data,
         "insights": insights,
         "chain_connected": balance_data.get("connected", False) if balance_data.get("source") != "sandbox" else False,
@@ -128,4 +132,9 @@ def get_summary():
         "sandbox_server_time": server_time.get("serverTime") if server_time else None,
         "payment_rules_count": payment_rules_count,
         "payment_history_count": payment_history_count,
+        "payment_rules": payment_rules,
+        "payment_history": payment_history[:10],
     }
+    resp = jsonify(out)
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    return resp

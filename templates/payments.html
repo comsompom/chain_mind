@@ -2,6 +2,18 @@
 {% block title %}Payments{% endblock %}
 {% block content %}
 <h1 class="mb-4"><i class="bi bi-wallet2"></i> AI-Driven Automatic Payment</h1>
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card border-info">
+      <div class="card-header text-info">Your balance & suggested rule</div>
+      <div class="card-body py-2">
+        <p class="mb-1 small" id="suggested-balance">Loading balance…</p>
+        <p class="mb-2 small text-muted" id="suggested-message"></p>
+        <button type="button" class="btn btn-sm btn-outline-info" id="fill-suggested-btn" style="display:none;">Fill form with suggestion</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="row">
   <div class="col-lg-5">
     <div class="card">
@@ -15,10 +27,12 @@
               <option value="balance_below">Balance below</option>
               <option value="time">Scheduled (time)</option>
             </select>
+            <div class="form-text small text-muted">When to run: pay when your balance is above/below a number, or at a set time.</div>
           </div>
           <div class="mb-2">
             <label class="form-label">Trigger value</label>
-            <input type="text" name="trigger_value" class="form-control bg-dark text-light" placeholder="e.g. 100 or 09:00" value="1">
+            <input type="text" name="trigger_value" class="form-control bg-dark text-light" placeholder="e.g. 0.05 or 09:00" value="1">
+            <div class="form-text small text-muted">For balance: a number (e.g. 0.05 = trigger when balance ≥ or ≤ this). For time: HH:MM (e.g. 09:00).</div>
           </div>
           <div class="mb-2">
             <label class="form-label">Symbol</label>
@@ -29,14 +43,17 @@
               <option value="other">Other</option>
             </select>
             <input type="text" name="symbol_other" class="form-control bg-dark text-light mt-1" id="symbol-other" placeholder="e.g. BTC, USDC" style="display:none;">
+            <div class="form-text small text-muted">Token to send: HSK (native on HashKey Chain), ETH, USDT, or type another.</div>
           </div>
           <div class="mb-2">
             <label class="form-label">Amount</label>
-            <input type="text" name="amount" class="form-control bg-dark text-light" placeholder="0.1" required>
+            <input type="text" name="amount" class="form-control bg-dark text-light" placeholder="0.002" required>
+            <div class="form-text small text-muted">Amount to send when the rule triggers (e.g. 0.002). Leave enough for gas.</div>
           </div>
           <div class="mb-2">
             <label class="form-label">Recipient address</label>
             <input type="text" name="recipient" class="form-control bg-dark text-light" placeholder="0x..." required>
+            <div class="form-text small text-muted">Wallet or payee address (0x...). Use your own address for testing.</div>
           </div>
           <button type="submit" class="btn btn-primary">Add Rule</button>
         </form>
@@ -78,6 +95,39 @@
 (function() {
   document.getElementById('symbol-select').addEventListener('change', function() {
     document.getElementById('symbol-other').style.display = this.value === 'other' ? 'block' : 'none';
+  });
+  function loadSuggestedRule() {
+    fetch('/api/payments/suggested-rule').then(function(r) { return r.json(); }).then(function(d) {
+      var bal = d.balance_eth != null ? d.balance_eth : 0;
+      var sym = d.symbol || 'HSK';
+      document.getElementById('suggested-balance').textContent = 'Your balance: ' + bal + ' ' + sym;
+      var msg = (d.suggested_rule && d.suggested_rule.message) ? d.suggested_rule.message : '';
+      document.getElementById('suggested-message').textContent = msg;
+      var btn = document.getElementById('fill-suggested-btn');
+      if (d.suggested_rule && bal > 0) {
+        btn.style.display = 'inline-block';
+        btn._suggestion = d;
+      } else {
+        btn.style.display = 'none';
+      }
+    }).catch(function() {
+      document.getElementById('suggested-balance').textContent = 'Could not load balance.';
+      document.getElementById('suggested-message').textContent = '';
+    });
+  }
+  document.getElementById('fill-suggested-btn').addEventListener('click', function() {
+    var d = this._suggestion;
+    if (!d || !d.suggested_rule) return;
+    var s = d.suggested_rule;
+    var form = document.getElementById('rule-form');
+    form.querySelector('[name="trigger_type"]').value = s.trigger_type || 'balance_above';
+    form.querySelector('[name="trigger_value"]').value = s.trigger_value || '0.05';
+    form.querySelector('[name="amount"]').value = s.amount || '0.002';
+    var sym = (s.symbol || 'HSK').toUpperCase();
+    var sel = form.querySelector('[name="symbol"]');
+    if (['HSK','ETH','USDT'].indexOf(sym) >= 0) { sel.value = sym; document.getElementById('symbol-other').style.display = 'none'; }
+    else { sel.value = 'other'; document.getElementById('symbol-other').value = sym; document.getElementById('symbol-other').style.display = 'block'; }
+    if (d.wallet_address) form.querySelector('[name="recipient"]').value = d.wallet_address;
   });
   function loadRules() {
     fetch('/api/payment-rules').then(r => r.json()).then(d => {
@@ -123,8 +173,9 @@
       .catch(function() { resultEl.textContent = 'Could not evaluate.'; resultEl.style.display = 'block'; })
       .finally(function() { document.getElementById('evaluate-now-btn').disabled = false; });
   });
+  loadSuggestedRule();
   loadRules(); loadPayments();
-  setInterval(function() { loadRules(); loadPayments(); }, 10000);
+  setInterval(function() { loadSuggestedRule(); loadRules(); loadPayments(); }, 10000);
 })();
 </script>
 {% endblock %}
