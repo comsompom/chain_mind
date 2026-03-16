@@ -1,0 +1,1 @@
+// ChainMind - optional global JS

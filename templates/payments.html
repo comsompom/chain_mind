@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Payments{% endblock %}
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-wallet2"></i> AI-Driven Automatic Payment</h1>
+<div class="row">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">Create Payment Rule</div>
+      <div class="card-body">
+        <form id="rule-form">
+          <div class="mb-2">
+            <label class="form-label">Trigger</label>
+            <select name="trigger_type" class="form-select bg-dark text-light">
+              <option value="balance_above">Balance above (ETH)</option>
+              <option value="balance_below">Balance below (ETH)</option>
+              <option value="time">Scheduled (time)</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Trigger value</label>
+            <input type="text" name="trigger_value" class="form-control bg-dark text-light" placeholder="e.g. 100 or 09:00" value="1">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Amount (ETH)</label>
+            <input type="text" name="amount" class="form-control bg-dark text-light" placeholder="0.1" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Recipient address</label>
+            <input type="text" name="recipient" class="form-control bg-dark text-light" placeholder="0x..." required>
+          </div>
+          <button type="submit" class="btn btn-primary">Add Rule</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">Payment Rules</div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush" id="rules-list">
+          <li class="list-group-item bg-transparent text-muted">Loading…</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card mt-3">
+      <div class="card-header">Payment History (HSP-ready)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>ID</th><th>Amount</th><th>Recipient</th><th>Status</th><th>Time</th></tr></thead>
+            <tbody id="payments-table">
+              <tr><td colspan="5" class="text-center text-muted">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="mt-3 small text-muted">HSP (HashKey Settlement Protocol) integration point: payment requests, confirmations, and status sync when API spec is available.</p>
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+  function loadRules() {
+    fetch('/api/payment-rules').then(r => r.json()).then(d => {
+      const list = document.getElementById('rules-list');
+      const rules = d.rules || [];
+      if (rules.length === 0) list.innerHTML = '<li class="list-group-item bg-transparent text-muted">No rules yet. Add one above.</li>';
+      else list.innerHTML = rules.map(r => '<li class="list-group-item bg-transparent">' + r.trigger_type + ' ' + r.trigger_value + ' → ' + r.amount + ' to ' + r.recipient.slice(0,10) + '…' + (r.ai_suggestion ? ' <small class="text-info">' + r.ai_suggestion + '</small>' : '') + '</li>').join('');
+    }).catch(() => {});
+  }
+  function loadPayments() {
+    fetch('/api/payments').then(r => r.json()).then(d => {
+      const tbody = document.getElementById('payments-table');
+      const payments = d.payments || [];
+      if (payments.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No payments yet</td></tr>';
+      else tbody.innerHTML = payments.map(p => '<tr><td>' + (p.id||'') + '</td><td>' + (p.amount||'') + '</td><td><code>' + (p.recipient||'').slice(0,12) + '…</code></td><td>' + (p.status||'') + '</td><td>' + (p.timestamp||'') + '</td></tr>').join('');
+    }).catch(() => {});
+  }
+  document.getElementById('rule-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    const body = { trigger_type: fd.get('trigger_type'), trigger_value: fd.get('trigger_value') || '0', amount: fd.get('amount'), recipient: fd.get('recipient') };
+    fetch('/api/payment-rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(r => r.json()).then(() => { loadRules(); this.reset(); }).catch(() => {});
+  });
+  loadRules(); loadPayments();
+  setInterval(function() { loadRules(); loadPayments(); }, 10000);
+})();
+</script>
+{% endblock %}

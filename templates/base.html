@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ChainMind{% endblock %} | HashKey Chain Horizon</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root { --chain-primary: #2563eb; --chain-dark: #0f172a; --chain-card: #1e293b; }
+    body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100vh; color: #e2e8f0; }
+    .navbar { background: rgba(15, 23, 42, 0.95) !important; border-bottom: 1px solid #334155; }
+    .nav-link { color: #94a3b8 !important; }
+    .nav-link:hover, .nav-link.active { color: #60a5fa !important; }
+    .card { background: var(--chain-card); border: 1px solid #334155; border-radius: 12px; }
+    .card-header { background: transparent; border-bottom: 1px solid #334155; font-weight: 600; }
+    .table { color: #e2e8f0; }
+    .table th { border-color: #334155; color: #94a3b8; }
+    .table td { border-color: #334155; }
+    .badge-trend-up { background: #059669; }
+    .badge-trend-down { background: #dc2626; }
+    .brand { font-weight: 700; color: #60a5fa; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand brand" href="/">ChainMind</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'page_dashboard' or request.endpoint == 'index' }}" href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'page_trading' }}" href="/trading">Trading</a></li>
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'page_payments' }}" href="/payments">Payments</a></li>
+        </ul>
+        <span class="navbar-text small text-muted">AI + DeFi + PayFi on HashKey Chain</span>
+      </div>
+    </div>
+  </nav>
+  <main class="container py-4">
+    {% block content %}{% endblock %}
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
