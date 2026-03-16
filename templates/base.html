@@ -16,9 +16,10 @@
     .card { background: var(--chain-card); border: 1px solid #475569; border-radius: 12px; color: var(--text-primary); }
     .card-header { background: rgba(51, 65, 85, 0.5); border-bottom: 1px solid #475569; font-weight: 600; color: var(--text-primary) !important; }
     .card-body { color: var(--text-primary); }
-    .table { color: var(--text-primary); }
-    .table th { border-color: #475569; color: var(--text-secondary) !important; }
-    .table td { border-color: #475569; color: var(--text-primary); }
+    .table { color: var(--text-primary); background: var(--chain-card) !important; }
+    .table thead th { background: rgba(51, 65, 85, 0.8) !important; border-color: #475569; color: var(--text-secondary) !important; }
+    .table tbody td { background: var(--chain-card) !important; border-color: #475569; color: var(--text-primary) !important; }
+    .table-hover tbody tr:hover td { background: rgba(51, 65, 85, 0.9) !important; }
     .text-muted { color: var(--text-muted) !important; }
     .text-secondary { color: var(--text-secondary) !important; }
     .list-group-item { color: var(--text-primary) !important; background: transparent !important; border-color: #334155; }
@@ -39,6 +40,7 @@
     .nav-tabs .nav-link { color: var(--text-secondary); border-color: #334155; }
     .nav-tabs .nav-link:hover { color: var(--text-primary); border-color: #475569; }
     .nav-tabs .nav-link.active { color: #60a5fa; background: var(--chain-card); border-color: #475569 #475569 transparent; }
+    .payment-summary-text { color: var(--text-secondary); font-size: 1rem; }
   </style>
   {% block head %}{% endblock %}
 </head>
