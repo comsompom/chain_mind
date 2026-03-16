@@ -1,9 +1,4 @@
 """Tests for chain service."""
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from backend.services.chain import get_balance, get_recent_txs
 
 

@@ -50,6 +50,16 @@ flask run
 
 Open **http://127.0.0.1:5000** → Dashboard, Trading, Payments.
 
+### 4. Run tests with coverage
+
+```bash
+pip install -r requirements.txt   # includes pytest, pytest-cov
+pytest tests/ -v --cov=backend --cov=config --cov-report=term-missing
+# HTML report: add --cov-report=html then open htmlcov/index.html
+```
+
+Configuration: `.coveragerc` (sources: `backend`, `config`; excludes venv and tests).
+
 ---
 
 ## Project structure
@@ -73,6 +83,13 @@ chain_mind/
 ├── templates/              # Jinja2 (dashboard, trading, payments)
 ├── static/
 ├── tests/
+│   ├── conftest.py         # Pytest path setup
+│   ├── test_api.py         # Flask API routes
+│   ├── test_chain.py       # Chain service
+│   ├── test_signals.py     # AI signals
+│   └── test_payments.py    # Payment rules & HSP
+├── .coveragerc             # Coverage config (backend, config)
+├── pytest.ini              # Pytest config
 ├── details.md              # Hackathon brief
 ├── PROJECT_PROPOSAL.md     # Full proposal
 ├── requirements.txt
