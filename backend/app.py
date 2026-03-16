@@ -71,6 +71,13 @@ def create_app() -> Flask:
     def page_payments():
         return render_template("payments.html")
 
+    # Start background scheduler so payment rules are evaluated periodically
+    try:
+        from backend.tasks import start_scheduler
+        start_scheduler()
+    except Exception:
+        pass
+
     return app
 
 

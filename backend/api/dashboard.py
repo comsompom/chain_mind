@@ -112,6 +112,13 @@ def get_summary():
     except Exception:
         sandbox_ok = False
         server_time = None
+    try:
+        from backend.services import ai_payments
+        payment_rules_count = len(ai_payments.list_rules())
+        payment_history_count = len(ai_payments.list_payments())
+    except Exception:
+        payment_rules_count = 0
+        payment_history_count = 0
     return {
         "balance": balance_data,
         "insights": insights,
@@ -119,4 +126,6 @@ def get_summary():
         "sandbox_connected": sandbox_ok,
         "sandbox_account_used": sandbox_balance is not None,
         "sandbox_server_time": server_time.get("serverTime") if server_time else None,
+        "payment_rules_count": payment_rules_count,
+        "payment_history_count": payment_history_count,
     }

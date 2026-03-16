@@ -37,6 +37,14 @@
         </div>
       </div>
     </div>
+    <div class="row mt-3">
+      <div class="col-12">
+        <p class="small mb-0">
+          <span id="payment-summary">Payment rules: — · Payments: —</span>
+          <a href="/payments" id="payment-link">Payments</a>
+        </p>
+      </div>
+    </div>
     <div class="row mt-4">
       <div class="col-12">
         <div class="card">
@@ -100,6 +108,10 @@
     if (d.sandbox_connected) { sb.style.display = 'inline-block'; sb.textContent = d.sandbox_account_used ? 'Sandbox account' : 'Sandbox OK (no key)'; } else { sb.style.display = 'none'; }
     var ul = document.getElementById('insights-list');
     ul.innerHTML = (d.insights || []).map(function(i) { return '<li class="list-group-item bg-transparent">' + (i.text || '') + '</li>'; }).join('') || '<li class="list-group-item bg-transparent">No insights</li>';
+    var rulesCount = d.payment_rules_count != null ? d.payment_rules_count : 0;
+    var historyCount = d.payment_history_count != null ? d.payment_history_count : 0;
+    var ps = document.getElementById('payment-summary');
+    if (ps) ps.textContent = 'Payment rules: ' + rulesCount + ' active · Payments in history: ' + historyCount + ' ';
   }
   function load() {
     fetch('/api/dashboard/summary').then(function(r) {

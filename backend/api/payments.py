@@ -6,6 +6,24 @@ from backend.services import ai_payments, hsp_client
 payments_bp = Blueprint("payments", __name__)
 
 
+def _evaluate_rules_now():
+    """Run payment rule evaluation once (same logic as scheduler). Returns number of payments recorded."""
+    from config import settings
+    from backend.services import chain
+    address = (getattr(settings, "WALLET_ADDRESS", "") or "").strip() or "0x0000000000000000000000000000000000000000"
+    balance_data = chain.get_balance(address)
+    try:
+        balance = float(balance_data.get("eth", 0))
+    except (TypeError, ValueError):
+        balance = 0.0
+    triggered = ai_payments.evaluate_rules(balance)
+    for rule in triggered:
+        symbol = rule.get("symbol") or "HSK"
+        req = hsp_client.create_payment_request(rule["amount"], rule["recipient"], rule["id"])
+        ai_payments.record_payment(rule["id"], rule["amount"], rule["recipient"], status=req["status"], symbol=symbol)
+    return len(triggered)
+
+
 @payments_bp.route("/payment-rules", methods=["GET"])
 def list_rules():
     return {"rules": ai_payments.list_rules()}
@@ -28,6 +46,13 @@ def create_rule():
 @payments_bp.route("/payments", methods=["GET"])
 def list_payments():
     return {"payments": ai_payments.list_payments()}
+
+
+@payments_bp.route("/payments/evaluate-now", methods=["POST"])
+def evaluate_now():
+    """Evaluate payment rules immediately using current wallet balance. For demo: see payments in history without waiting for scheduler."""
+    count = _evaluate_rules_now()
+    return jsonify({"evaluated": True, "payments_triggered": count, "payments": ai_payments.list_payments()})
 
 
 @payments_bp.route("/payments/execute", methods=["POST"])

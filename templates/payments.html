@@ -53,8 +53,12 @@
       </div>
     </div>
     <div class="card mt-3">
-      <div class="card-header">Payment History (HSP-ready)</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Payment History (HSP-ready)</span>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="evaluate-now-btn">Check rules now</button>
+      </div>
       <div class="card-body p-0">
+        <p class="small text-success px-3 pt-2 mb-0" id="evaluate-result" style="display:none;"></p>
         <div class="table-responsive">
           <table class="table table-hover mb-0">
             <thead><tr><th>ID</th><th>Amount</th><th>Symbol</th><th>Recipient</th><th>Status</th><th>Time</th></tr></thead>
@@ -105,6 +109,19 @@
     const body = { trigger_type: fd.get('trigger_type'), trigger_value: fd.get('trigger_value') || '0', amount: fd.get('amount'), recipient: fd.get('recipient'), symbol: symbol || 'HSK' };
     fetch('/api/payment-rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(r => r.json()).then(() => { loadRules(); this.reset(); document.getElementById('symbol-other').style.display = 'none'; }).catch(() => {});
+  });
+  document.getElementById('evaluate-now-btn').addEventListener('click', function() {
+    this.disabled = true;
+    var resultEl = document.getElementById('evaluate-result');
+    fetch('/api/payments/evaluate-now', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        resultEl.style.display = 'block';
+        resultEl.textContent = d.payments_triggered > 0 ? 'Triggered ' + d.payments_triggered + ' payment(s).' : 'No rules triggered (balance conditions not met).';
+        loadPayments();
+      })
+      .catch(function() { resultEl.textContent = 'Could not evaluate.'; resultEl.style.display = 'block'; })
+      .finally(function() { document.getElementById('evaluate-now-btn').disabled = false; });
   });
   loadRules(); loadPayments();
   setInterval(function() { loadRules(); loadPayments(); }, 10000);
