@@ -4,6 +4,22 @@ Based on the official HashKey API documentation.
 
 ---
 
+## Use sandbox without API key (public data only)
+
+You can use the **HashKey Global sandbox** for public data **without any API key**:
+
+| Endpoint | Auth | Description |
+|----------|------|--------------|
+| `GET https://api-glb.sim.hashkeydev.com/api/v1/ping` | **None** | Test connectivity |
+| `GET https://api-glb.sim.hashkeydev.com/api/v1/time` | **None** | Server time |
+| `GET https://api-glb.sim.hashkeydev.com/api/v1/exchangeInfo` | **None** | Trading pairs (symbols) |
+| `GET https://api-glb.sim.hashkeydev.com/quote/v1/ticker/24hr` | **None** | 24h ticker (prices) |
+| `GET https://api-glb.sim.hashkeydev.com/quote/v1/ticker/price` | **None** | Latest price |
+
+ChainMind uses these when no `HSP_API_KEY` is set: dashboard shows “Sandbox OK (no API key)” and trading signals can use live sandbox ticker data.
+
+---
+
 ## Sandbox (testing)
 
 Use this to get API keys for development and demos.

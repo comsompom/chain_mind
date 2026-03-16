@@ -10,6 +10,7 @@
         <p class="mb-0 fs-4" id="balance-eth">—</p>
         <p class="text-muted small mb-0">ETH (HashKey Chain)</p>
         <span class="badge bg-secondary mt-2" id="chain-status">Loading…</span>
+        <span class="badge bg-info mt-2 ms-1" id="sandbox-status" style="display:none;">Sandbox (no key)</span>
       </div>
     </div>
   </div>
@@ -53,6 +54,8 @@
       document.getElementById('balance-eth').textContent = (d.balance && d.balance.eth) ? d.balance.eth + ' ETH' : '—';
       document.getElementById('chain-status').textContent = (d.chain_connected) ? 'Connected' : 'Demo (no RPC)';
       document.getElementById('chain-status').className = 'badge mt-2 ' + (d.chain_connected ? 'bg-success' : 'bg-secondary');
+      var sb = document.getElementById('sandbox-status');
+      if (d.sandbox_connected) { sb.style.display = 'inline-block'; sb.textContent = 'Sandbox OK (no API key)'; } else { sb.style.display = 'none'; }
       const ul = document.getElementById('insights-list');
       ul.innerHTML = (d.insights || []).map(i => '<li class="list-group-item bg-transparent">' + (i.text || '') + '</li>').join('') || '<li class="list-group-item bg-transparent text-muted">No insights</li>';
     }).catch(() => {});

@@ -33,6 +33,18 @@ def create_app() -> Flask:
     def health():
         return {"status": "ok", "app": "ChainMind"}
 
+    # Sandbox status (no API key required)
+    @app.route("/api/sandbox/status")
+    def sandbox_status():
+        from backend.services import hashkey_sandbox
+        ok = hashkey_sandbox.ping()
+        time_data = hashkey_sandbox.server_time() if ok else None
+        return {
+            "sandbox_connected": ok,
+            "message": "HashKey sandbox public API (no API key)" if ok else "Sandbox unreachable",
+            "server_time": time_data.get("serverTime") if time_data else None,
+        }
+
     # Register blueprints
     from backend.api.dashboard import dashboard_bp
     from backend.api.trading import trading_bp

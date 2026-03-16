@@ -16,10 +16,28 @@ except ImportError:
 def get_signals(prices: list[float] | None = None, volume: list[float] | None = None) -> dict[str, Any]:
     """
     Produce trading signals from price/volume (or mock data).
-    Returns: trend, volatility_regime, risk_on_off, suggestion text.
+    When prices not provided, tries HashKey sandbox 24hr ticker (no API key).
     """
     if not prices or len(prices) < 2:
-        prices = _mock_prices(20)
+        try:
+            from backend.services.hashkey_sandbox import ticker_24hr
+            data = ticker_24hr()
+            if data and isinstance(data, list):
+                # Use 24hr open (o) and close (c) for trend; build minimal series
+                for t in data:
+                    if isinstance(t, dict):
+                        o, c = t.get("o"), t.get("c")
+                        if o and c and o != "0" and c != "0":
+                            try:
+                                o_f, c_f = float(o), float(c)
+                                prices = [o_f, (o_f + c_f) / 2, c_f]
+                                break
+                            except (TypeError, ValueError):
+                                pass
+        except Exception:
+            pass
+        if not prices or len(prices) < 2:
+            prices = _mock_prices(20)
     if not volume:
         volume = [random.uniform(100, 1000) for _ in range(len(prices))]
 
