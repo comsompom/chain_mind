@@ -1,7 +1,7 @@
 # ChainMind
 
 <p align="center">
-  <img src="chain_mind_logo.png" alt="ChainMind logo" width="240">
+  <img src="chain_mind_logo.jpg" alt="ChainMind logo" width="240">
 </p>
 
 **AI-powered intelligent trading and automatic payment orchestration for HashKey Chain DeFi.**
