@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Privacy (ZKID){% endblock %}
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-shield-lock"></i> Privacy & ZKID</h1>
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">Zero-Knowledge Identity (ZKID) track</div>
+      <div class="card-body">
+        <p class="mb-2">Zero-Knowledge Proofs (ZK) enable <strong>proving without leaking</strong>: you can prove a statement is true without revealing the underlying data. In Web3 this reshapes the balance between <strong>transparency</strong> and <strong>privacy</strong>.</p>
+        <p class="mb-2">ChainMind is designed with privacy in mind. Future versions could use ZK to:</p>
+        <ul class="mb-2">
+          <li>Prove &ldquo;my balance is above X&rdquo; for a payment rule without revealing the exact balance.</li>
+          <li>Prove compliance or eligibility without exposing full transaction history.</li>
+        </ul>
+        <p class="mb-0 text-muted small">This page lets you mask sensitive data in the UI as a first step toward privacy-aware behaviour.</p>
+      </div>
+    </div>
+    <div class="card mt-3">
+      <div class="card-header">Mask sensitive data in UI</div>
+      <div class="card-body">
+        <p class="small text-muted mb-2">When enabled, addresses and amounts are partially hidden across Dashboard and Payments (e.g. 0x1234…abcd). Data is only masked in the browser; the server still has full values.</p>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="mask-toggle">
+          <label class="form-check-label" for="mask-toggle">Mask addresses and amounts</label>
+        </div>
+        <p class="small text-muted mb-0 mt-2" id="mask-status">Masking is off.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+  var toggle = document.getElementById('mask-toggle');
+  var status = document.getElementById('mask-status');
+  toggle.checked = (localStorage.getItem('chainmind_mask') === '1');
+  function updateStatus() {
+    if (toggle.checked) {
+      localStorage.setItem('chainmind_mask', '1');
+      status.textContent = 'Masking is on. Reload Dashboard or Payments to apply.';
+      status.className = 'small text-success mb-0 mt-2';
+    } else {
+      localStorage.removeItem('chainmind_mask');
+      status.textContent = 'Masking is off. Addresses and amounts are shown in full.';
+      status.className = 'small text-muted mb-0 mt-2';
+    }
+  }
+  toggle.addEventListener('change', updateStatus);
+  updateStatus();
+})();
+</script>
+{% endblock %}

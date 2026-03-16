@@ -101,14 +101,23 @@ chain_mind/
 - **Toasts:** Success/error toasts for add rule, delete, evaluate, and validation errors.
 - **Status API:** `GET /api/status` returns chain/sandbox connectivity, wallet configured, and rule/payment counts (for monitoring).
 
+**Multi-track (all four hackathon tracks):**
+- **DeFi:** Dashboard **DeFi / RWA Assets** card (native + staking + tokenized RWA demo).
+- **PayFi:** **Payment receipt** per payment (Request ID, status); "Receipt" button in Payment History.
+- **AI:** Trading signals show **confidence %** and **"Why"** reason.
+- **ZKID:** **Privacy** page (nav) with ZK narrative and **"Mask sensitive data"** toggle (addresses/amounts masked across Dashboard and Payments).
+
+See [docs/HACKATHON_TRACKS.md](docs/HACKATHON_TRACKS.md) for full track alignment.
+
 ---
 
 ## Demo script (for judges)
 
-1. **Dashboard** – Show balance (or demo data), recent txs, AI insights.
-2. **Trading** – Show signals (trend, volatility, risk) and 1–2 sentence AI insights.
-3. **Payments** – Create a payment rule (e.g. “When balance above 1 ETH, send 0.1 to 0x…”); show AI suggestion; show payment history and HSP-ready flow.
-4. **One-pager** – Problem → Solution → Architecture (ChainMind + HashKey Chain + HSP).
+1. **Dashboard** – Balance, DeFi/RWA assets, AI insights, active rules, recent txs.
+2. **Trading** – Signals with confidence % and "Why"; AI insights.
+3. **Payments** – Create a payment rule (e.g. “When balance above 1 ETH, send 0.1 to 0x…”); show AI suggestion; view **Receipt** for a payment.
+4. **Privacy** – Toggle "Mask sensitive data"; reload Dashboard/Payments to see masked addresses/amounts.
+5. **One-pager** – Problem → Solution → Architecture (ChainMind + HashKey Chain + HSP + all four tracks).
 
 ---
 

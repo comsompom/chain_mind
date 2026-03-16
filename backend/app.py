@@ -104,6 +104,10 @@ def create_app() -> Flask:
     def page_payments():
         return render_template("payments.html")
 
+    @app.route("/privacy")
+    def page_privacy():
+        return render_template("privacy.html")
+
     # Start background scheduler so payment rules are evaluated periodically
     try:
         from backend.tasks import start_scheduler

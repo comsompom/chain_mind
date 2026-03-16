@@ -115,7 +115,9 @@
     var bal = d.balance || {};
     var isSandbox = bal.source === 'sandbox';
     var sym = bal.symbol || 'HSK';
-    document.getElementById('balance-eth').textContent = (bal.eth != null && bal.eth !== '') ? bal.eth + (isSandbox ? ' (total)' : ' ' + sym) : '—';
+    var balStr = (bal.eth != null && bal.eth !== '') ? bal.eth + (isSandbox ? ' (total)' : ' ' + sym) : '—';
+    if (window.chainMindMaskAmount && localStorage.getItem('chainmind_mask') === '1' && bal.eth != null && bal.eth !== '') balStr = window.chainMindMaskAmount(bal.eth) + ' ' + sym;
+    document.getElementById('balance-eth').textContent = balStr;
     var label = isSandbox ? 'Exchange (Sandbox API)' : (d.chain_connected ? 'HashKey Chain Testnet (wallet)' : 'HashKey Chain Testnet (wallet)');
     document.getElementById('balance-label').textContent = label;
     var errEl = document.getElementById('balance-error');
@@ -136,7 +138,13 @@
     ul.innerHTML = (d.insights || []).map(function(i) { return '<li class="list-group-item bg-transparent">' + (i.text || '') + '</li>'; }).join('') || '<li class="list-group-item bg-transparent">No insights</li>';
     var assets = d.portfolio_assets || [];
     var assetsEl = document.getElementById('portfolio-assets-list');
-    if (assetsEl) assetsEl.innerHTML = assets.length ? assets.map(function(a) { return '<li class="list-group-item bg-transparent py-1 d-flex justify-content-between"><span>' + (a.label || a.symbol) + '</span><span class="balance-value">' + (a.balance || '0') + ' ' + (a.symbol || '') + '</span></li>'; }).join('') : '<li class="list-group-item bg-transparent">No assets</li>';
+    if (assetsEl) {
+      var mask = window.chainMindMaskAmount && localStorage.getItem('chainmind_mask') === '1';
+      assetsEl.innerHTML = assets.length ? assets.map(function(a) {
+        var bal = mask ? window.chainMindMaskAmount(a.balance) : (a.balance || '0');
+        return '<li class="list-group-item bg-transparent py-1 d-flex justify-content-between"><span>' + (a.label || a.symbol) + '</span><span class="balance-value">' + bal + ' ' + (a.symbol || '') + '</span></li>';
+      }).join('') : '<li class="list-group-item bg-transparent">No assets</li>';
+    }
     var rulesCount = d.payment_rules_count != null ? d.payment_rules_count : 0;
     var historyCount = d.payment_history_count != null ? d.payment_history_count : 0;
     var ps = document.getElementById('payment-summary');
@@ -148,8 +156,11 @@
       rulesRow.style.display = 'block';
       rulesUl.innerHTML = rulesList.map(function(r) {
         var sym = r.symbol || 'HSK';
-        var rec = (r.recipient || '').slice(0, 10) + (r.recipient && r.recipient.length > 10 ? '…' : '');
-        return '<li class="list-group-item bg-transparent py-1">' + (r.trigger_type || '') + ' ' + (r.trigger_value || '') + ' → ' + (r.amount || '') + ' ' + sym + ' to ' + rec + '</li>';
+        var rec = (r.recipient || '');
+        if (window.chainMindMask && localStorage.getItem('chainmind_mask') === '1') rec = window.chainMindMask(rec); else rec = rec.slice(0, 10) + (rec.length > 10 ? '…' : '');
+        var amt = (r.amount || '');
+        if (window.chainMindMaskAmount && localStorage.getItem('chainmind_mask') === '1') amt = window.chainMindMaskAmount(amt);
+        return '<li class="list-group-item bg-transparent py-1">' + (r.trigger_type || '') + ' ' + (r.trigger_value || '') + ' → ' + amt + ' ' + sym + ' to ' + rec + '</li>';
       }).join('');
     } else if (rulesRow) rulesRow.style.display = 'none';
   }

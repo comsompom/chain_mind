@@ -22,7 +22,9 @@
         <p class="mb-1"><strong>Trend:</strong> <span id="trend-label" class="badge">—</span></p>
         <p class="mb-1"><strong>Volatility:</strong> <span id="volatility">—</span></p>
         <p class="mb-1"><strong>Risk:</strong> <span id="risk">—</span></p>
-        <p class="mt-3 mb-0 text-info" id="suggestion">Loading…</p>
+        <p class="mb-1"><strong>Confidence:</strong> <span id="confidence" class="badge bg-secondary">—</span></p>
+        <p class="mt-2 mb-1 small text-muted"><strong>Why:</strong> <span id="reason">—</span></p>
+        <p class="mt-2 mb-0 text-info" id="suggestion">Loading…</p>
       </div>
     </div>
   </div>
@@ -61,6 +63,10 @@
       document.getElementById('trend-label').className = 'badge ' + (d.trend_label === 'up' ? 'bg-success' : 'bg-danger');
       document.getElementById('volatility').textContent = (d.volatility != null) ? d.volatility + ' (' + (d.volatility_regime || '') + ')' : '—';
       document.getElementById('risk').textContent = d.risk || '—';
+      var conf = d.confidence != null ? Math.round(d.confidence * 100) + '%' : '—';
+      document.getElementById('confidence').textContent = conf;
+      document.getElementById('confidence').className = 'badge ' + (d.confidence >= 0.7 ? 'bg-success' : (d.confidence >= 0.4 ? 'bg-warning text-dark' : 'bg-secondary'));
+      document.getElementById('reason').textContent = d.reason || '—';
       document.getElementById('suggestion').textContent = d.suggestion || '—';
       document.getElementById('prices-sample').textContent = (d.prices_sample && d.prices_sample.length) ? d.prices_sample.join(', ') : '—';
     }).catch(() => {});
