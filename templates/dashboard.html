@@ -2,43 +2,70 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 <h1 class="mb-4"><i class="bi bi-grid-1x2"></i> Dashboard</h1>
-<div class="row">
-  <div class="col-md-4">
-    <div class="card h-100">
-      <div class="card-header">Portfolio Balance</div>
-      <div class="card-body">
-        <p class="mb-0 fs-4" id="balance-eth">—</p>
-        <p class="small mb-0 balance-label" id="balance-label">HashKey Chain</p>
-        <div id="balance-assets" class="small mt-1" style="display:none;"></div>
-        <span class="badge bg-secondary mt-2" id="chain-status">Loading…</span>
-        <span class="badge bg-info mt-2 ms-1" id="sandbox-status" style="display:none;">Sandbox</span>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-8">
-    <div class="card h-100">
-      <div class="card-header">AI Insights</div>
-      <div class="card-body">
-        <ul class="list-group list-group-flush" id="insights-list">
-          <li class="list-group-item bg-transparent">Loading…</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="row mt-4">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header"><span id="tx-title">Recent Transactions</span></div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead><tr><th>Hash</th><th>From</th><th>To</th><th>Value</th><th>Block</th></tr></thead>
-            <tbody id="tx-table">
-              <tr><td colspan="5" class="text-center text-muted">Loading…</td></tr>
-            </tbody>
-          </table>
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="portfolio-tab" data-bs-toggle="tab" data-bs-target="#portfolio-pane" type="button" role="tab">Portfolio</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab" data-bs-target="#recommendations-pane" type="button" role="tab">Recommendations</button>
+  </li>
+</ul>
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="portfolio-pane" role="tabpanel">
+    <div class="row">
+      <div class="col-md-4">
+        <div class="card h-100">
+          <div class="card-header">Portfolio Balance</div>
+          <div class="card-body">
+            <p class="mb-0 fs-4 balance-value" id="balance-eth">—</p>
+            <p class="small mb-0 balance-label" id="balance-label">HashKey Chain</p>
+            <div id="balance-assets" class="small mt-1" style="display:none;"></div>
+            <span class="badge bg-secondary mt-2" id="chain-status">Loading…</span>
+            <span class="badge bg-info mt-2 ms-1" id="sandbox-status" style="display:none;">Sandbox</span>
+            <p class="small mt-2 mb-0 text-warning" id="balance-error" style="display:none;"></p>
+          </div>
         </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-header">AI Insights</div>
+          <div class="card-body">
+            <ul class="list-group list-group-flush" id="insights-list">
+              <li class="list-group-item bg-transparent">Loading…</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header"><span id="tx-title">Recent Transactions</span></div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead><tr><th>Hash</th><th>From</th><th>To</th><th>Value</th><th>Block</th></tr></thead>
+                <tbody id="tx-table">
+                  <tr><td colspan="5" class="text-center">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="recommendations-pane" role="tabpanel">
+    <div class="card">
+      <div class="card-header">Using recommendations</div>
+      <div class="card-body">
+        <ul class="mb-0 ps-3">
+          <li class="mb-2">Set <code>WALLET_ADDRESS</code> in <code>.env</code> (your wallet address) to see your HSK balance on this dashboard.</li>
+          <li class="mb-2">Use <code>RPC_URL=https://testnet.hsk.xyz</code> in <code>.env</code> for HashKey Chain Testnet.</li>
+          <li class="mb-2">Get testnet HSK from the <a href="https://faucet.hsk.xyz/faucet" target="_blank" rel="noopener">faucet</a> (e.g. 1 HSK per 24h).</li>
+          <li class="mb-2">For exchange account balance and trades, set <code>HSP_API_KEY</code> and <code>HSP_SECRET</code> in <code>.env</code> (from HashKey sandbox → API Management).</li>
+          <li>Copy <code>.env.example</code> to <code>.env</code> and fill in the values. Never commit <code>.env</code> or expose your secret key.</li>
+        </ul>
       </div>
     </div>
   </div>
@@ -56,7 +83,13 @@
       var isSandbox = bal.source === 'sandbox';
       var sym = bal.symbol || 'HSK';
       document.getElementById('balance-eth').textContent = (bal.eth != null && bal.eth !== '') ? bal.eth + (isSandbox ? ' (total)' : ' ' + sym) : '—';
-      document.getElementById('balance-label').textContent = isSandbox ? 'Exchange (Sandbox API)' : (d.chain_connected ? 'HashKey Chain Testnet (wallet)' : 'HashKey Chain Testnet – set WALLET_ADDRESS in .env');
+      var label = isSandbox ? 'Exchange (Sandbox API)' : (d.chain_connected ? 'HashKey Chain Testnet (wallet)' : 'HashKey Chain Testnet (wallet)');
+      document.getElementById('balance-label').textContent = label;
+      var errEl = document.getElementById('balance-error');
+      if (bal.error && !isSandbox) {
+        errEl.style.display = 'block';
+        errEl.textContent = 'Chain unreachable. Set RPC_URL=https://testnet.hsk.xyz in .env and retry.';
+      } else { errEl.style.display = 'none'; errEl.textContent = ''; }
       var assetsEl = document.getElementById('balance-assets');
       if (isSandbox && bal.balances && bal.balances.length) {
         assetsEl.style.display = 'block';

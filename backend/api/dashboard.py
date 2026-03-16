@@ -57,11 +57,17 @@ def _transactions_from_sandbox(limit=10):
 @dashboard_bp.route("/dashboard/balance", methods=["GET"])
 def get_balance():
     from config import settings
+    address = (getattr(settings, "WALLET_ADDRESS", "") or "").strip()
+    # Prefer chain (HashKey Testnet) balance when user has set WALLET_ADDRESS
+    if address and address != "0x0000000000000000000000000000000000000000":
+        result = chain.get_balance(address)
+        if result.get("connected"):
+            return result
+        # If chain not connected, fall back to sandbox if configured
     sandbox_balance = _balance_from_sandbox()
     if sandbox_balance is not None:
         return sandbox_balance
-    address = settings.WALLET_ADDRESS or "0x0000000000000000000000000000000000000000"
-    return chain.get_balance(address)
+    return chain.get_balance(address or "0x0000000000000000000000000000000000000000")
 
 
 @dashboard_bp.route("/dashboard/transactions", methods=["GET"])
@@ -80,12 +86,21 @@ def get_summary():
     from backend.services.ai_signals import get_insights
     from backend.services import hashkey_sandbox
 
-    sandbox_balance = _balance_from_sandbox()
-    if sandbox_balance is not None:
-        balance_data = sandbox_balance
-    else:
-        address = settings.WALLET_ADDRESS or "0x0000000000000000000000000000000000000000"
+    address = (getattr(settings, "WALLET_ADDRESS", "") or "").strip()
+    has_wallet = bool(address and address != "0x0000000000000000000000000000000000000000")
+    # Prefer chain balance when user has set WALLET_ADDRESS (show their HSK on HashKey Testnet)
+    if has_wallet:
         balance_data = chain.get_balance(address)
+        if not balance_data.get("connected"):
+            sandbox_balance = _balance_from_sandbox()
+            if sandbox_balance is not None:
+                balance_data = sandbox_balance
+    else:
+        sandbox_balance = _balance_from_sandbox()
+        if sandbox_balance is not None:
+            balance_data = sandbox_balance
+        else:
+            balance_data = chain.get_balance("0x0000000000000000000000000000000000000000")
     insights = get_insights()[:3]
     sandbox_ok = hashkey_sandbox.ping()
     server_time = hashkey_sandbox.server_time() if sandbox_ok else None
