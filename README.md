@@ -33,9 +33,11 @@ pip install -r requirements.txt
 
 ```bash
 copy .env.example .env
-# Default: HashKey Chain Testnet (RPC https://testnet.hsk.xyz). Set WALLET_ADDRESS to see your HSK balance on the dashboard.
+# Edit .env: set WALLET_ADDRESS to your wallet to see HSK balance on the dashboard (read-only; no private key).
 # Get testnet HSK: https://faucet.hsk.xyz/faucet
 ```
+
+**Hackathon:** Using your real wallet address in `WALLET_ADDRESS` is fine and recommended. The app only reads balance from HashKey Chain Testnet (no private key in env); this fits the DeFi track (applications based on HashKey Chain).
 
 ### 3. Run the app
 

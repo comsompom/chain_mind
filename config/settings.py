@@ -12,6 +12,7 @@ load_dotenv(_root / ".env")
 # https://docs.hashkeychain.net/docs/Developer-QuickStart
 RPC_URL = os.getenv("RPC_URL", "https://testnet.hsk.xyz")
 CHAIN_ID = int(os.getenv("CHAIN_ID", "133"))  # HashKey Chain Testnet = 133
+CHAIN_DISPLAY_NAME = os.getenv("CHAIN_DISPLAY_NAME", "HashKey Chain Testnet")
 NATIVE_SYMBOL = os.getenv("NATIVE_SYMBOL", "HSK")  # HashKey Chain native token
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "")
 

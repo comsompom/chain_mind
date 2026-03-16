@@ -17,20 +17,27 @@ def get_signals(prices: list[float] | None = None, volume: list[float] | None = 
     """
     Produce trading signals from price/volume (or mock data).
     When prices not provided, tries HashKey sandbox 24hr ticker (no API key).
+    Returns chain, data_source, symbols so the UI can show what the signal is based on.
     """
+    data_source = "Demo (mock)"
+    symbols_used: list[str] = []
+
     if not prices or len(prices) < 2:
         try:
             from backend.services.hashkey_sandbox import ticker_24hr
             data = ticker_24hr()
             if data and isinstance(data, list):
-                # Use 24hr open (o) and close (c) for trend; build minimal series
                 for t in data:
                     if isinstance(t, dict):
                         o, c = t.get("o"), t.get("c")
+                        sym = t.get("s") or t.get("symbol") or ""
                         if o and c and o != "0" and c != "0":
                             try:
                                 o_f, c_f = float(o), float(c)
                                 prices = [o_f, (o_f + c_f) / 2, c_f]
+                                data_source = "HashKey Global Sandbox"
+                                if sym:
+                                    symbols_used = [sym]
                                 break
                             except (TypeError, ValueError):
                                 pass
@@ -38,6 +45,7 @@ def get_signals(prices: list[float] | None = None, volume: list[float] | None = 
             pass
         if not prices or len(prices) < 2:
             prices = _mock_prices(20)
+
     if not volume:
         volume = [random.uniform(100, 1000) for _ in range(len(prices))]
 
@@ -47,8 +55,21 @@ def get_signals(prices: list[float] | None = None, volume: list[float] | None = 
     risk = "on" if trend > 0 and volatility < 0.02 else "off"
     suggestion = _suggestion_text(trend, volatility, risk)
 
+    # Include symbol/chain in suggestion when we have market context
+    if symbols_used:
+        suggestion = f"{symbols_used[0]}: {suggestion}"
+
+    try:
+        from config import settings
+        chain_name = getattr(settings, "CHAIN_DISPLAY_NAME", "HashKey Chain Testnet")
+    except Exception:
+        chain_name = "HashKey Chain Testnet"
+
     return {
         "timestamp": datetime.utcnow().isoformat() + "Z",
+        "chain": chain_name,
+        "data_source": data_source,
+        "symbols": symbols_used,
         "trend": round(float(trend), 6),
         "trend_label": "up" if trend > 0 else "down",
         "volatility": round(float(volatility), 6),
