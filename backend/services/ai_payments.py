@@ -52,6 +52,33 @@ def list_rules() -> list[dict]:
     return list(_payment_rules)
 
 
+def get_rule(rule_id: str) -> dict | None:
+    """Return a rule by id or None."""
+    for r in _payment_rules:
+        if r.get("id") == rule_id:
+            return r
+    return None
+
+
+def delete_rule(rule_id: str) -> bool:
+    """Remove a rule by id. Returns True if removed."""
+    for i, r in enumerate(_payment_rules):
+        if r.get("id") == rule_id:
+            _payment_rules.pop(i)
+            return True
+    return False
+
+
+def update_rule(rule_id: str, enabled: bool | None = None) -> dict | None:
+    """Update a rule (e.g. enable/disable). Returns updated rule or None."""
+    for r in _payment_rules:
+        if r.get("id") == rule_id:
+            if enabled is not None:
+                r["enabled"] = enabled
+            return r
+    return None
+
+
 def list_payments() -> list[dict]:
     return list(reversed(_payment_history))
 

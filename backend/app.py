@@ -33,6 +33,39 @@ def create_app() -> Flask:
     def health():
         return {"status": "ok", "app": "ChainMind"}
 
+    # Status: chain, sandbox, wallet, rules (for monitoring / professional dashboards)
+    @app.route("/api/status")
+    def api_status():
+        from backend.services import chain
+        from backend.api.dashboard import _balance_from_sandbox
+        try:
+            from backend.services import ai_payments
+            all_rules = ai_payments.list_rules()
+            rules_count = sum(1 for r in all_rules if r.get("enabled", True))
+            payments_count = len(ai_payments.list_payments())
+        except Exception:
+            rules_count = 0
+            payments_count = 0
+        wallet = (getattr(settings, "WALLET_ADDRESS", "") or "").strip()
+        try:
+            chain_ok = bool(chain.get_web3() and chain.get_web3().is_connected())
+        except Exception:
+            chain_ok = False
+        sandbox_ok = False
+        try:
+            from backend.services import hashkey_sandbox
+            sandbox_ok = hashkey_sandbox.ping()
+        except Exception:
+            pass
+        return {
+            "app": "ChainMind",
+            "chain_connected": chain_ok,
+            "sandbox_connected": sandbox_ok,
+            "wallet_configured": bool(wallet and wallet != "0x0000000000000000000000000000000000000000"),
+            "payment_rules": rules_count,
+            "payment_history_entries": payments_count,
+        }
+
     # Sandbox status (no API key required)
     @app.route("/api/sandbox/status")
     def sandbox_status():

@@ -55,7 +55,7 @@
             <input type="text" name="recipient" class="form-control bg-dark text-light" placeholder="0x..." required>
             <div class="form-text small text-muted">Wallet or payee address (0x...). Use your own address for testing.</div>
           </div>
-          <button type="submit" class="btn btn-primary">Add Rule</button>
+          <button type="submit" class="btn btn-primary" id="add-rule-btn">Add Rule</button>
         </form>
       </div>
     </div>
@@ -70,9 +70,12 @@
       </div>
     </div>
     <div class="card mt-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span>Payment History (HSP-ready)</span>
-        <button type="button" class="btn btn-sm btn-outline-primary" id="evaluate-now-btn">Check rules now</button>
+        <div class="d-flex gap-1">
+          <a href="/api/payments/export" class="btn btn-sm btn-outline-secondary" download>Export CSV</a>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="evaluate-now-btn">Check rules now</button>
+        </div>
       </div>
       <div class="card-body p-0">
         <p class="small text-success px-3 pt-2 mb-0" id="evaluate-result" style="display:none;"></p>
@@ -136,9 +139,43 @@
       if (rules.length === 0) list.innerHTML = '<li class="list-group-item bg-transparent">No rules yet. Add one above.</li>';
       else list.innerHTML = rules.map(r => {
         var sym = r.symbol || 'HSK';
-        return '<li class="list-group-item bg-transparent">' + r.trigger_type + ' ' + r.trigger_value + ' → ' + r.amount + ' ' + sym + ' to ' + r.recipient.slice(0,10) + '…' + (r.ai_suggestion ? ' <small class="text-info">' + r.ai_suggestion + '</small>' : '') + '</li>';
+        var rec = (r.recipient || '').slice(0, 10) + ((r.recipient || '').length > 10 ? '…' : '');
+        var disabled = r.enabled === false;
+        var badge = disabled ? ' <span class="badge bg-secondary">Disabled</span>' : '';
+        return '<li class="list-group-item bg-transparent d-flex justify-content-between align-items-start">' +
+          '<span>' + (r.trigger_type || '') + ' ' + (r.trigger_value || '') + ' → ' + (r.amount || '') + ' ' + sym + ' to ' + rec + badge +
+          (r.ai_suggestion ? ' <small class="text-info d-block">' + r.ai_suggestion + '</small>' : '') + '</span>' +
+          '<div class="btn-group btn-group-sm"><button type="button" class="btn btn-outline-secondary btn-sm toggle-rule" data-rule-id="' + (r.id || '') + '" data-enabled="' + (r.enabled !== false) + '" title="' + (r.enabled !== false ? 'Disable' : 'Enable') + '"><i class="bi bi-' + (r.enabled !== false ? 'pause' : 'play') + '-fill"></i></button>' +
+          '<button type="button" class="btn btn-outline-danger btn-sm delete-rule" data-rule-id="' + (r.id || '') + '" title="Delete"> <i class="bi bi-trash"></i></button></div></li>';
       }).join('');
-    }).catch(() => {});
+      list.querySelectorAll('.delete-rule').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = this.getAttribute('data-rule-id');
+          if (!id) return;
+          if (!window.confirm('Delete this payment rule?')) return;
+          fetch('/api/payment-rules/' + encodeURIComponent(id), { method: 'DELETE' })
+            .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
+            .then(function(r) {
+              if (r.ok) { if (window.chainMindToast) window.chainMindToast('Rule deleted', 'success'); loadRules(); }
+              else if (window.chainMindToast) window.chainMindToast(r.data.error || 'Failed to delete', 'danger');
+            }).catch(function() { if (window.chainMindToast) window.chainMindToast('Request failed', 'danger'); });
+        });
+      });
+      list.querySelectorAll('.toggle-rule').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = this.getAttribute('data-rule-id');
+          var currentlyEnabled = this.getAttribute('data-enabled') === 'true';
+          var newEnabled = !currentlyEnabled;
+          if (!id) return;
+          fetch('/api/payment-rules/' + encodeURIComponent(id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: newEnabled }) })
+            .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
+            .then(function(r) {
+              if (r.ok) { if (window.chainMindToast) window.chainMindToast(newEnabled ? 'Rule enabled' : 'Rule disabled', 'success'); loadRules(); }
+              else if (window.chainMindToast) window.chainMindToast(r.data.error || 'Failed to update', 'danger');
+            }).catch(function() { if (window.chainMindToast) window.chainMindToast('Request failed', 'danger'); });
+        });
+      });
+    }).catch(function() { if (window.chainMindToast) window.chainMindToast('Could not load rules', 'danger'); });
   }
   function loadPayments() {
     fetch('/api/payments').then(r => r.json()).then(d => {
@@ -151,14 +188,46 @@
       }).join('');
     }).catch(() => {});
   }
+  function isValidAddress(s) {
+    return /^0x[a-fA-F0-9]{40}$/.test((s || '').trim());
+  }
+  function isValidAmount(s) {
+    var n = parseFloat((s || '').trim());
+    return !isNaN(n) && n > 0;
+  }
   document.getElementById('rule-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    const fd = new FormData(this);
+    var form = this;
+    var recipient = (form.querySelector('[name="recipient"]').value || '').trim();
+    var amount = (form.querySelector('[name="amount"]').value || '').trim();
+    if (!isValidAddress(recipient)) {
+      if (window.chainMindToast) window.chainMindToast('Enter a valid EVM address (0x + 40 hex characters)', 'danger');
+      return;
+    }
+    if (!isValidAmount(amount)) {
+      if (window.chainMindToast) window.chainMindToast('Amount must be a number greater than 0', 'danger');
+      return;
+    }
+    var btn = document.getElementById('add-rule-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+    const fd = new FormData(form);
     var symbol = fd.get('symbol');
     if (symbol === 'other') symbol = (fd.get('symbol_other') || 'HSK').trim().toUpperCase() || 'HSK';
-    const body = { trigger_type: fd.get('trigger_type'), trigger_value: fd.get('trigger_value') || '0', amount: fd.get('amount'), recipient: fd.get('recipient'), symbol: symbol || 'HSK' };
+    const body = { trigger_type: fd.get('trigger_type'), trigger_value: fd.get('trigger_value') || '0', amount: amount, recipient: recipient, symbol: symbol || 'HSK' };
     fetch('/api/payment-rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      .then(r => r.json()).then(() => { loadRules(); this.reset(); document.getElementById('symbol-other').style.display = 'none'; }).catch(() => {});
+      .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+      .then(function(res) {
+        if (res.ok) {
+          if (window.chainMindToast) window.chainMindToast('Rule added', 'success');
+          loadRules();
+          form.reset();
+          document.getElementById('symbol-other').style.display = 'none';
+        } else {
+          if (window.chainMindToast) window.chainMindToast(res.data.error || 'Failed to add rule', 'danger');
+        }
+      })
+      .catch(function() { if (window.chainMindToast) window.chainMindToast('Request failed', 'danger'); })
+      .finally(function() { if (btn) { btn.disabled = false; btn.textContent = 'Add Rule'; } });
   });
   document.getElementById('evaluate-now-btn').addEventListener('click', function() {
     this.disabled = true;
@@ -169,8 +238,9 @@
         resultEl.style.display = 'block';
         resultEl.textContent = d.payments_triggered > 0 ? 'Triggered ' + d.payments_triggered + ' payment(s).' : 'No rules triggered (balance conditions not met).';
         loadPayments();
+        if (window.chainMindToast) window.chainMindToast(d.payments_triggered > 0 ? 'Evaluated: ' + d.payments_triggered + ' payment(s) triggered' : 'No rules triggered', d.payments_triggered > 0 ? 'success' : 'primary');
       })
-      .catch(function() { resultEl.textContent = 'Could not evaluate.'; resultEl.style.display = 'block'; })
+      .catch(function() { resultEl.textContent = 'Could not evaluate.'; resultEl.style.display = 'block'; if (window.chainMindToast) window.chainMindToast('Could not evaluate rules', 'danger'); })
       .finally(function() { document.getElementById('evaluate-now-btn').disabled = false; });
   });
   loadSuggestedRule();

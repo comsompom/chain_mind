@@ -39,6 +39,19 @@
     </div>
     <div class="row mt-3">
       <div class="col-12">
+        <div class="card">
+          <div class="card-header">DeFi / RWA Assets <span class="badge bg-secondary ms-1">HashKey Chain</span></div>
+          <div class="card-body py-2">
+            <ul class="list-group list-group-flush mb-0" id="portfolio-assets-list">
+              <li class="list-group-item bg-transparent">Loading…</li>
+            </ul>
+            <p class="small text-muted mb-0 mt-2">Native balance from wallet; staking and RWA are demo placeholders for DeFi track.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-12">
         <div class="d-flex align-items-center gap-2 flex-wrap">
           <span id="payment-summary" class="payment-summary-text">Payment rules: — · Payments: —</span>
           <a href="/payments" id="payment-link" class="btn btn-sm btn-outline-primary">Payments</a>
@@ -121,11 +134,14 @@
     if (d.sandbox_connected) { sb.style.display = 'inline-block'; sb.textContent = d.sandbox_account_used ? 'Sandbox account' : 'Sandbox OK (no key)'; } else { sb.style.display = 'none'; }
     var ul = document.getElementById('insights-list');
     ul.innerHTML = (d.insights || []).map(function(i) { return '<li class="list-group-item bg-transparent">' + (i.text || '') + '</li>'; }).join('') || '<li class="list-group-item bg-transparent">No insights</li>';
+    var assets = d.portfolio_assets || [];
+    var assetsEl = document.getElementById('portfolio-assets-list');
+    if (assetsEl) assetsEl.innerHTML = assets.length ? assets.map(function(a) { return '<li class="list-group-item bg-transparent py-1 d-flex justify-content-between"><span>' + (a.label || a.symbol) + '</span><span class="balance-value">' + (a.balance || '0') + ' ' + (a.symbol || '') + '</span></li>'; }).join('') : '<li class="list-group-item bg-transparent">No assets</li>';
     var rulesCount = d.payment_rules_count != null ? d.payment_rules_count : 0;
     var historyCount = d.payment_history_count != null ? d.payment_history_count : 0;
     var ps = document.getElementById('payment-summary');
     if (ps) ps.textContent = 'Payment rules: ' + rulesCount + ' active · Payments in history: ' + historyCount + ' ';
-    var rulesList = d.payment_rules;
+    var rulesList = (d.payment_rules || []).filter(function(r) { return r.enabled !== false; });
     var rulesRow = document.getElementById('payment-rules-row');
     var rulesUl = document.getElementById('dashboard-rules-list');
     if (rulesList && rulesList.length > 0 && rulesRow && rulesUl) {

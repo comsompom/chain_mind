@@ -65,6 +65,11 @@ def get_signals(prices: list[float] | None = None, volume: list[float] | None = 
     except Exception:
         chain_name = "HashKey Chain Testnet"
 
+    # Confidence: higher when we have real data and volatility is not extreme
+    confidence = 0.5 + (0.3 if data_source != "Demo (mock)" else 0) + (0.2 if volatility < 0.05 else 0)
+    confidence = min(1.0, round(confidence, 2))
+    reason = _reason_text(trend, volatility, risk, data_source)
+
     return {
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "chain": chain_name,
@@ -76,6 +81,8 @@ def get_signals(prices: list[float] | None = None, volume: list[float] | None = 
         "volatility_regime": "high" if volatility > 0.02 else "normal",
         "risk": risk,
         "suggestion": suggestion,
+        "confidence": confidence,
+        "reason": reason,
         "prices_sample": [round(float(p), 4) for p in prices[-5:]],
     }
 
@@ -124,3 +131,20 @@ def _suggestion_text(trend: float, volatility: float, risk: str) -> str:
     if volatility > 0.02:
         return "High volatility – reduce size or use limit orders."
     return "Sideways – consider range strategies or hold."
+
+
+def _reason_text(trend: float, volatility: float, risk: str, data_source: str) -> str:
+    """Short explanation for the signal (AI 'why')."""
+    parts = []
+    if trend > 0.01:
+        parts.append("positive trend")
+    elif trend < -0.01:
+        parts.append("negative trend")
+    else:
+        parts.append("sideways price")
+    if volatility > 0.02:
+        parts.append("elevated volatility")
+    else:
+        parts.append("moderate volatility")
+    parts.append(f"risk {risk}; data from {data_source}")
+    return "; ".join(parts)

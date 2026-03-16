@@ -115,7 +115,7 @@ def get_summary():
     try:
         from backend.services import ai_payments
         payment_rules = ai_payments.list_rules()
-        payment_rules_count = len(payment_rules)
+        payment_rules_count = sum(1 for r in payment_rules if r.get("enabled", True))
         payment_history = ai_payments.list_payments()
         payment_history_count = len(payment_history)
     except Exception:
@@ -123,8 +123,26 @@ def get_summary():
         payment_history = []
         payment_rules_count = 0
         payment_history_count = 0
+
+    # DeFi / RWA: portfolio assets (native + mock staking/RWA for hackathon narrative)
+    try:
+        eth_val = float(balance_data.get("eth") or 0)
+        sym = balance_data.get("symbol") or "HSK"
+        portfolio_assets = [
+            {"symbol": sym, "balance": str(eth_val), "type": "native", "label": f"Native {sym}"},
+            {"symbol": sym, "balance": f"{eth_val * 0.1:.4f}" if eth_val else "0", "type": "staking", "label": f"Staked {sym} (demo)"},
+            {"symbol": "RWA", "balance": "0.001", "type": "rwa", "label": "Tokenized RWA (demo)"},
+        ]
+    except (TypeError, ValueError):
+        portfolio_assets = [
+            {"symbol": "HSK", "balance": "0", "type": "native", "label": "Native HSK"},
+            {"symbol": "HSK", "balance": "0", "type": "staking", "label": "Staked HSK (demo)"},
+            {"symbol": "RWA", "balance": "0.001", "type": "rwa", "label": "Tokenized RWA (demo)"},
+        ]
+
     out = {
         "balance": balance_data,
+        "portfolio_assets": portfolio_assets,
         "insights": insights,
         "chain_connected": balance_data.get("connected", False) if balance_data.get("source") != "sandbox" else False,
         "sandbox_connected": sandbox_ok,

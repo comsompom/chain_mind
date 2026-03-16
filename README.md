@@ -94,6 +94,13 @@ chain_mind/
    - **HSP (PayFi):** Stub client for create/confirm/status; document “HSP-ready” in pitch.  
    - **AI:** Local Python (e.g. sklearn, rules) so basic demo works without external API keys.
 
+**Additional (UX & API):**
+- **Payment rules:** Delete or enable/disable rules (UI + `DELETE` / `PATCH /api/payment-rules/<id>`).
+- **Export:** Payment history as CSV (`GET /api/payments/export` or "Export CSV" on Payments page).
+- **Validation:** Server- and client-side validation for recipient (EVM address) and amount (> 0).
+- **Toasts:** Success/error toasts for add rule, delete, evaluate, and validation errors.
+- **Status API:** `GET /api/status` returns chain/sandbox connectivity, wallet configured, and rule/payment counts (for monitoring).
+
 ---
 
 ## Demo script (for judges)

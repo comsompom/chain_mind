@@ -1,9 +1,38 @@
 """Payments API: rules and history; HSP-ready flow."""
-from flask import Blueprint, request, jsonify
+import csv
+import io
+import re
+from flask import Blueprint, request, jsonify, Response
 
 from backend.services import ai_payments, hsp_client
 
 payments_bp = Blueprint("payments", __name__)
+
+# Basic EVM address: 0x + 40 hex chars
+_ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
+
+
+def _validate_recipient(recipient: str) -> str | None:
+    """Return error message if invalid, else None."""
+    if not recipient or not isinstance(recipient, str):
+        return "Recipient address is required."
+    a = recipient.strip()
+    if not _ADDRESS_RE.match(a):
+        return "Recipient must be a valid EVM address (0x followed by 40 hex characters)."
+    return None
+
+
+def _validate_amount(amount: str) -> str | None:
+    """Return error message if invalid, else None."""
+    if amount is None or (isinstance(amount, str) and not amount.strip()):
+        return "Amount is required."
+    try:
+        v = float(str(amount).strip())
+        if v <= 0:
+            return "Amount must be greater than 0."
+    except ValueError:
+        return "Amount must be a valid number."
+    return None
 
 
 def _current_balance():
@@ -85,18 +114,77 @@ def create_rule():
     data = request.get_json() or {}
     trigger_type = data.get("trigger_type", "balance_above")
     trigger_value = data.get("trigger_value", "0")
-    amount = data.get("amount", "0")
-    recipient = data.get("recipient", "")
+    amount = (data.get("amount") or "").strip() or "0"
+    recipient = (data.get("recipient") or "").strip()
     symbol = (data.get("symbol") or "HSK").strip().upper() or "HSK"
-    if not recipient:
-        return jsonify({"error": "recipient required"}), 400
+    err = _validate_recipient(recipient)
+    if err:
+        return jsonify({"error": err}), 400
+    err = _validate_amount(amount)
+    if err:
+        return jsonify({"error": err}), 400
     rule = ai_payments.add_rule(trigger_type, trigger_value, amount, recipient, symbol=symbol)
     return jsonify(rule), 201
+
+
+@payments_bp.route("/payment-rules/<rule_id>", methods=["DELETE"])
+def delete_rule(rule_id):
+    """Delete a payment rule by id."""
+    if ai_payments.delete_rule(rule_id):
+        return jsonify({"deleted": True, "id": rule_id}), 200
+    return jsonify({"error": "Rule not found"}), 404
+
+
+@payments_bp.route("/payment-rules/<rule_id>", methods=["PATCH"])
+def update_rule(rule_id):
+    """Enable or disable a rule. Body: { \"enabled\": true|false }."""
+    data = request.get_json() or {}
+    enabled = data.get("enabled")
+    if enabled is None:
+        return jsonify({"error": "enabled (true/false) required"}), 400
+    rule = ai_payments.update_rule(rule_id, enabled=bool(enabled))
+    if rule is None:
+        return jsonify({"error": "Rule not found"}), 404
+    return jsonify(rule), 200
 
 
 @payments_bp.route("/payments", methods=["GET"])
 def list_payments():
     return {"payments": ai_payments.list_payments()}
+
+
+@payments_bp.route("/payments/receipt/<payment_id>", methods=["GET"])
+def get_receipt(payment_id):
+    """Get a single payment as receipt (PayFi / HSP narrative: request ID, status, etc.)."""
+    payments = ai_payments.list_payments()
+    for p in payments:
+        if p.get("id") == payment_id:
+            receipt = dict(p)
+            receipt["hsp_request_id"] = f"HSP-{payment_id}-{receipt.get('timestamp', '')[:10]}"
+            return jsonify(receipt)
+    return jsonify({"error": "Payment not found"}), 404
+
+
+@payments_bp.route("/payments/export", methods=["GET"])
+def export_payments():
+    """Export payment history as CSV."""
+    payments = ai_payments.list_payments()
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["ID", "Rule ID", "Amount", "Symbol", "Recipient", "Status", "Time"])
+    for p in payments:
+        w.writerow([
+            p.get("id", ""),
+            p.get("rule_id", ""),
+            p.get("amount", ""),
+            p.get("symbol", ""),
+            p.get("recipient", ""),
+            p.get("status", ""),
+            p.get("timestamp", ""),
+        ])
+    resp = Response(out.getvalue(), mimetype="text/csv")
+    resp.headers["Content-Disposition"] = "attachment; filename=chainmind_payments.csv"
+    return resp
 
 
 @payments_bp.route("/payments/evaluate-now", methods=["POST"])
