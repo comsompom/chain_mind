@@ -1,8 +1,14 @@
 # ChainMind
 
+<p align="center">
+  <img src="chain_mind_logo.png" alt="ChainMind logo" width="240">
+</p>
+
 **AI-powered intelligent trading and automatic payment orchestration for HashKey Chain DeFi.**
 
-Built for the **HashKey Chain On-Chain Horizon Hackathon** (AI + PayFi + DeFi tracks).
+Built for the **HashKey Chain On-Chain Horizon Hackathon** (AI + PayFi + DeFi + ZKID tracks).
+
+**[▶ Video presentation](https://www.youtube.com/watch?v=4N1Yz3T2kXA)** — Demo walkthrough (Dashboard, Trading, Payments, Privacy).
 
 ---
 
