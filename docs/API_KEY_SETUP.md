@@ -18,6 +18,8 @@ You can use the **HashKey Global sandbox** for public data **without any API key
 
 ChainMind uses these when no `HSP_API_KEY` is set: dashboard shows “Sandbox OK (no API key)” and trading signals can use live sandbox ticker data.
 
+**Account balance and transactions:** To show your **exchange account balance** and **recent trades** on the dashboard from the sandbox, set both `HSP_API_KEY` and `HSP_SECRET` in `.env` (from the same sandbox account → API Management → Create API). The dashboard will then use `GET /api/v1/account` and `GET /api/v1/account/trades` instead of chain/mock data.
+
 ---
 
 ## Sandbox (testing)

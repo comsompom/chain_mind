@@ -38,7 +38,7 @@
       <div class="card-header">Payment Rules</div>
       <div class="card-body p-0">
         <ul class="list-group list-group-flush" id="rules-list">
-          <li class="list-group-item bg-transparent text-muted">Loading…</li>
+          <li class="list-group-item bg-transparent">Loading…</li>
         </ul>
       </div>
     </div>
@@ -66,7 +66,7 @@
     fetch('/api/payment-rules').then(r => r.json()).then(d => {
       const list = document.getElementById('rules-list');
       const rules = d.rules || [];
-      if (rules.length === 0) list.innerHTML = '<li class="list-group-item bg-transparent text-muted">No rules yet. Add one above.</li>';
+      if (rules.length === 0) list.innerHTML = '<li class="list-group-item bg-transparent">No rules yet. Add one above.</li>';
       else list.innerHTML = rules.map(r => '<li class="list-group-item bg-transparent">' + r.trigger_type + ' ' + r.trigger_value + ' → ' + r.amount + ' to ' + r.recipient.slice(0,10) + '…' + (r.ai_suggestion ? ' <small class="text-info">' + r.ai_suggestion + '</small>' : '') + '</li>').join('');
     }).catch(() => {});
   }
@@ -74,7 +74,7 @@
     fetch('/api/payments').then(r => r.json()).then(d => {
       const tbody = document.getElementById('payments-table');
       const payments = d.payments || [];
-      if (payments.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No payments yet</td></tr>';
+      if (payments.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="text-center">No payments yet</td></tr>';
       else tbody.innerHTML = payments.map(p => '<tr><td>' + (p.id||'') + '</td><td>' + (p.amount||'') + '</td><td><code>' + (p.recipient||'').slice(0,12) + '…</code></td><td>' + (p.status||'') + '</td><td>' + (p.timestamp||'') + '</td></tr>').join('');
     }).catch(() => {});
   }

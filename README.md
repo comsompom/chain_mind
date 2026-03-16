@@ -33,7 +33,8 @@ pip install -r requirements.txt
 
 ```bash
 copy .env.example .env
-# Edit .env: set RPC_URL (HashKey Chain), optional WALLET_ADDRESS, HSP_URL when available.
+# Default: HashKey Chain Testnet (RPC https://testnet.hsk.xyz). Set WALLET_ADDRESS to see your HSK balance on the dashboard.
+# Get testnet HSK: https://faucet.hsk.xyz/faucet
 ```
 
 ### 3. Run the app

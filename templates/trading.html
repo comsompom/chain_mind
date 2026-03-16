@@ -18,8 +18,8 @@
     <div class="card">
       <div class="card-header">AI Insights</div>
       <div class="card-body">
-        <ul class="list-group list-group-flush list-group-item-dark" id="insights-list">
-          <li class="list-group-item bg-transparent text-secondary">Loading…</li>
+        <ul class="list-group list-group-flush" id="insights-list">
+          <li class="list-group-item bg-transparent">Loading…</li>
         </ul>
       </div>
     </div>
@@ -50,7 +50,7 @@
     }).catch(() => {});
     fetch('/api/insights').then(r => r.json()).then(d => {
       const ul = document.getElementById('insights-list');
-      ul.innerHTML = (d.insights || []).map(i => '<li class="list-group-item bg-transparent">' + (i.text || '') + '</li>').join('') || '<li class="list-group-item bg-transparent text-muted">No insights</li>';
+      ul.innerHTML = (d.insights || []).map(i => '<li class="list-group-item bg-transparent">' + (i.text || '') + '</li>').join('') || '<li class="list-group-item bg-transparent">No insights</li>';
     }).catch(() => {});
   }
   load();

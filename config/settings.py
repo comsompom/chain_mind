@@ -8,13 +8,17 @@ from dotenv import load_dotenv
 _root = Path(__file__).resolve().parent.parent
 load_dotenv(_root / ".env")
 
-# Chain
-RPC_URL = os.getenv("RPC_URL", "http://127.0.0.1:8545")
+# Chain (HashKey Chain Testnet for hackathon – DeFi track)
+# https://docs.hashkeychain.net/docs/Developer-QuickStart
+RPC_URL = os.getenv("RPC_URL", "https://testnet.hsk.xyz")
+CHAIN_ID = int(os.getenv("CHAIN_ID", "133"))  # HashKey Chain Testnet = 133
+NATIVE_SYMBOL = os.getenv("NATIVE_SYMBOL", "HSK")  # HashKey Chain native token
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "")
 
-# HSP (PayFi)
+# HSP (PayFi) / HashKey Sandbox (exchange account)
 HSP_URL = os.getenv("HSP_URL", "https://hsp.hashkey.chain")
 HSP_API_KEY = os.getenv("HSP_API_KEY", "")
+HSP_SECRET = os.getenv("HSP_SECRET", "")  # Required for sandbox account balance/trades
 
 # App
 FLASK_ENV = os.getenv("FLASK_ENV", "development")
