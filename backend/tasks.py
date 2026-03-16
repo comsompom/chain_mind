@@ -14,9 +14,9 @@ def evaluate_payment_rules():
     except (TypeError, ValueError):
         balance_eth = 0.0
     for rule in ai_payments.evaluate_rules(balance_eth):
-        # Stub: create request and record (in production, queue to HSP)
+        symbol = rule.get("symbol") or "HSK"
         req = hsp_client.create_payment_request(rule["amount"], rule["recipient"], rule["id"])
-        ai_payments.record_payment(rule["id"], rule["amount"], rule["recipient"], status=req["status"])
+        ai_payments.record_payment(rule["id"], rule["amount"], rule["recipient"], status=req["status"], symbol=symbol)
 
 
 def start_scheduler():

@@ -18,9 +18,10 @@ def create_rule():
     trigger_value = data.get("trigger_value", "0")
     amount = data.get("amount", "0")
     recipient = data.get("recipient", "")
+    symbol = (data.get("symbol") or "HSK").strip().upper() or "HSK"
     if not recipient:
         return jsonify({"error": "recipient required"}), 400
-    rule = ai_payments.add_rule(trigger_type, trigger_value, amount, recipient)
+    rule = ai_payments.add_rule(trigger_type, trigger_value, amount, recipient, symbol=symbol)
     return jsonify(rule), 201
 
 
@@ -36,8 +37,10 @@ def execute_payment():
     amount = data.get("amount", "0")
     recipient = data.get("recipient", "")
     rule_id = data.get("rule_id", "")
+    symbol = (data.get("symbol") or "HSK").strip().upper() or "HSK"
     if not amount or not recipient:
         return jsonify({"error": "amount and recipient required"}), 400
     req = hsp_client.create_payment_request(amount, recipient, reference=rule_id)
-    record = ai_payments.record_payment(rule_id, amount, recipient, status=req["status"])
+    req["symbol"] = symbol
+    record = ai_payments.record_payment(rule_id, amount, recipient, status=req["status"], symbol=symbol)
     return jsonify({"request": req, "record": record}), 201

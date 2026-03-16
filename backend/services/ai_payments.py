@@ -28,15 +28,17 @@ class PaymentRule:
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
 
 
-def add_rule(trigger_type: str, trigger_value: str, amount: str, recipient: str) -> dict:
-    """Add a payment rule and return it with id."""
+def add_rule(trigger_type: str, trigger_value: str, amount: str, recipient: str, symbol: str = "HSK") -> dict:
+    """Add a payment rule and return it with id. symbol: HSK (HashKey Chain), ETH, or other token."""
     rule_id = f"rule_{len(_payment_rules) + 1}_{datetime.utcnow().strftime('%H%M%S')}"
-    suggestion = _ai_suggest_timing(trigger_type, amount)
+    suggestion = _ai_suggest_timing(trigger_type, amount, symbol)
+    symbol = (symbol or "HSK").strip().upper() or "HSK"
     rule = {
         "id": rule_id,
         "trigger_type": trigger_type,
         "trigger_value": trigger_value,
         "amount": amount,
+        "symbol": symbol,
         "recipient": recipient,
         "enabled": True,
         "ai_suggestion": suggestion,
@@ -78,12 +80,14 @@ def evaluate_rules(current_balance_eth: float) -> list[dict]:
     return to_execute
 
 
-def record_payment(rule_id: str, amount: str, recipient: str, status: str = "submitted") -> dict:
+def record_payment(rule_id: str, amount: str, recipient: str, status: str = "submitted", symbol: str = "HSK") -> dict:
     """Record a payment in history (e.g. after HSP submit)."""
+    symbol = (symbol or "HSK").strip().upper() or "HSK"
     entry = {
         "id": f"pay_{len(_payment_history) + 1}",
         "rule_id": rule_id,
         "amount": amount,
+        "symbol": symbol,
         "recipient": recipient,
         "status": status,
         "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -92,10 +96,10 @@ def record_payment(rule_id: str, amount: str, recipient: str, status: str = "sub
     return entry
 
 
-def _ai_suggest_timing(trigger_type: str, amount: str) -> str:
+def _ai_suggest_timing(trigger_type: str, amount: str, symbol: str = "HSK") -> str:
     """AI suggestion for optimal timing or risk check."""
     if trigger_type == TriggerType.TIME:
         return "Scheduled payments can reduce gas by batching. Consider off-peak hours."
     if trigger_type in (TriggerType.BALANCE_ABOVE, TriggerType.BALANCE_BELOW):
-        return "Rule will trigger automatically when condition is met. Ensure sufficient gas."
-    return "Review amount and recipient before enabling."
+        return f"Rule will trigger when condition is met. Ensure sufficient {symbol} and gas."
+    return "Review amount, symbol and recipient before enabling."

@@ -77,39 +77,56 @@
 {% block scripts %}
 <script>
 (function() {
+  function applySummary(d) {
+    var bal = d.balance || {};
+    var isSandbox = bal.source === 'sandbox';
+    var sym = bal.symbol || 'HSK';
+    document.getElementById('balance-eth').textContent = (bal.eth != null && bal.eth !== '') ? bal.eth + (isSandbox ? ' (total)' : ' ' + sym) : '—';
+    var label = isSandbox ? 'Exchange (Sandbox API)' : (d.chain_connected ? 'HashKey Chain Testnet (wallet)' : 'HashKey Chain Testnet (wallet)');
+    document.getElementById('balance-label').textContent = label;
+    var errEl = document.getElementById('balance-error');
+    if (bal.error && !isSandbox) {
+      errEl.style.display = 'block';
+      errEl.textContent = 'Chain unreachable. Set RPC_URL=https://testnet.hsk.xyz in .env and retry.';
+    } else { errEl.style.display = 'none'; errEl.textContent = ''; }
+    var assetsEl = document.getElementById('balance-assets');
+    if (isSandbox && bal.balances && bal.balances.length) {
+      assetsEl.style.display = 'block';
+      assetsEl.innerHTML = bal.balances.slice(0, 5).map(function(b) { return (b.asset || b.assetId) + ': ' + (b.total || b.free || '0'); }).join(' &middot; ');
+    } else { assetsEl.style.display = 'none'; }
+    document.getElementById('chain-status').textContent = d.chain_connected ? 'Chain connected' : (isSandbox ? '—' : 'Demo (no RPC)');
+    document.getElementById('chain-status').className = 'badge mt-2 ' + (d.chain_connected ? 'bg-success' : 'bg-secondary');
+    var sb = document.getElementById('sandbox-status');
+    if (d.sandbox_connected) { sb.style.display = 'inline-block'; sb.textContent = d.sandbox_account_used ? 'Sandbox account' : 'Sandbox OK (no key)'; } else { sb.style.display = 'none'; }
+    var ul = document.getElementById('insights-list');
+    ul.innerHTML = (d.insights || []).map(function(i) { return '<li class="list-group-item bg-transparent">' + (i.text || '') + '</li>'; }).join('') || '<li class="list-group-item bg-transparent">No insights</li>';
+  }
   function load() {
-    fetch('/api/dashboard/summary').then(r => r.json()).then(d => {
-      var bal = d.balance || {};
-      var isSandbox = bal.source === 'sandbox';
-      var sym = bal.symbol || 'HSK';
-      document.getElementById('balance-eth').textContent = (bal.eth != null && bal.eth !== '') ? bal.eth + (isSandbox ? ' (total)' : ' ' + sym) : '—';
-      var label = isSandbox ? 'Exchange (Sandbox API)' : (d.chain_connected ? 'HashKey Chain Testnet (wallet)' : 'HashKey Chain Testnet (wallet)');
-      document.getElementById('balance-label').textContent = label;
-      var errEl = document.getElementById('balance-error');
-      if (bal.error && !isSandbox) {
-        errEl.style.display = 'block';
-        errEl.textContent = 'Chain unreachable. Set RPC_URL=https://testnet.hsk.xyz in .env and retry.';
-      } else { errEl.style.display = 'none'; errEl.textContent = ''; }
-      var assetsEl = document.getElementById('balance-assets');
-      if (isSandbox && bal.balances && bal.balances.length) {
-        assetsEl.style.display = 'block';
-        assetsEl.innerHTML = bal.balances.slice(0, 5).map(function(b) { return (b.asset || b.assetId) + ': ' + (b.total || b.free || '0'); }).join(' &middot; ');
-      } else { assetsEl.style.display = 'none'; }
-      document.getElementById('chain-status').textContent = d.chain_connected ? 'Chain connected' : (isSandbox ? '—' : 'Demo (no RPC)');
-      document.getElementById('chain-status').className = 'badge mt-2 ' + (d.chain_connected ? 'bg-success' : 'bg-secondary');
-      var sb = document.getElementById('sandbox-status');
-      if (d.sandbox_connected) { sb.style.display = 'inline-block'; sb.textContent = d.sandbox_account_used ? 'Sandbox account' : 'Sandbox OK (no key)'; } else { sb.style.display = 'none'; }
-      var ul = document.getElementById('insights-list');
-      ul.innerHTML = (d.insights || []).map(function(i) { return '<li class="list-group-item bg-transparent">' + (i.text || '') + '</li>'; }).join('') || '<li class="list-group-item bg-transparent">No insights</li>';
-    }).catch(function() {});
-    fetch('/api/dashboard/transactions').then(r => r.json()).then(d => {
+    fetch('/api/dashboard/summary').then(function(r) {
+      if (!r.ok) throw new Error('Summary ' + r.status);
+      return r.json();
+    }).then(applySummary).catch(function() {
+      document.getElementById('balance-eth').textContent = '—';
+      document.getElementById('balance-label').textContent = 'HashKey Chain Testnet (wallet)';
+      document.getElementById('balance-error').style.display = 'block';
+      document.getElementById('balance-error').textContent = 'Could not load. Check server is running and .env (RPC_URL, WALLET_ADDRESS).';
+      document.getElementById('chain-status').textContent = 'Error';
+      document.getElementById('chain-status').className = 'badge mt-2 bg-danger';
+      document.getElementById('insights-list').innerHTML = '<li class="list-group-item bg-transparent">Could not load insights.</li>';
+    });
+    fetch('/api/dashboard/transactions').then(function(r) {
+      if (!r.ok) return { transactions: [] };
+      return r.json();
+    }).then(function(d) {
       var txs = d.transactions || [];
       var source = d.source;
       document.getElementById('tx-title').textContent = source === 'sandbox' ? 'Recent Transactions (Exchange)' : 'Recent Transactions';
       var tbody = document.getElementById('tx-table');
       if (txs.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="text-center">No transactions</td></tr>';
       else tbody.innerHTML = txs.map(function(t) { return '<tr><td><code>' + (t.hash||'') + '</code></td><td>' + (t.from||'') + '</td><td>' + (t.to||'') + '</td><td>' + (t.value||'') + '</td><td>' + (t.block||'') + '</td></tr>'; }).join('');
-    }).catch(function() {});
+    }).catch(function() {
+      document.getElementById('tx-table').innerHTML = '<tr><td colspan="5" class="text-center">Could not load transactions.</td></tr>';
+    });
   }
   load();
   setInterval(load, 30000);

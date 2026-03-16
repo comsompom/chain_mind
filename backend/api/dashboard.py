@@ -86,6 +86,7 @@ def get_summary():
     from backend.services.ai_signals import get_insights
     from backend.services import hashkey_sandbox
 
+    sandbox_balance = None
     address = (getattr(settings, "WALLET_ADDRESS", "") or "").strip()
     has_wallet = bool(address and address != "0x0000000000000000000000000000000000000000")
     # Prefer chain balance when user has set WALLET_ADDRESS (show their HSK on HashKey Testnet)
@@ -101,9 +102,16 @@ def get_summary():
             balance_data = sandbox_balance
         else:
             balance_data = chain.get_balance("0x0000000000000000000000000000000000000000")
-    insights = get_insights()[:3]
-    sandbox_ok = hashkey_sandbox.ping()
-    server_time = hashkey_sandbox.server_time() if sandbox_ok else None
+    try:
+        insights = get_insights()[:3]
+    except Exception:
+        insights = []
+    try:
+        sandbox_ok = hashkey_sandbox.ping()
+        server_time = hashkey_sandbox.server_time() if sandbox_ok else None
+    except Exception:
+        sandbox_ok = False
+        server_time = None
     return {
         "balance": balance_data,
         "insights": insights,

@@ -11,8 +11,8 @@
           <div class="mb-2">
             <label class="form-label">Trigger</label>
             <select name="trigger_type" class="form-select bg-dark text-light">
-              <option value="balance_above">Balance above (ETH)</option>
-              <option value="balance_below">Balance below (ETH)</option>
+              <option value="balance_above">Balance above</option>
+              <option value="balance_below">Balance below</option>
               <option value="time">Scheduled (time)</option>
             </select>
           </div>
@@ -21,7 +21,17 @@
             <input type="text" name="trigger_value" class="form-control bg-dark text-light" placeholder="e.g. 100 or 09:00" value="1">
           </div>
           <div class="mb-2">
-            <label class="form-label">Amount (ETH)</label>
+            <label class="form-label">Symbol</label>
+            <select name="symbol" class="form-select bg-dark text-light" id="symbol-select">
+              <option value="HSK">HSK (HashKey Chain)</option>
+              <option value="ETH">ETH</option>
+              <option value="USDT">USDT</option>
+              <option value="other">Other</option>
+            </select>
+            <input type="text" name="symbol_other" class="form-control bg-dark text-light mt-1" id="symbol-other" placeholder="e.g. BTC, USDC" style="display:none;">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Amount</label>
             <input type="text" name="amount" class="form-control bg-dark text-light" placeholder="0.1" required>
           </div>
           <div class="mb-2">
@@ -47,9 +57,9 @@
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover mb-0">
-            <thead><tr><th>ID</th><th>Amount</th><th>Recipient</th><th>Status</th><th>Time</th></tr></thead>
+            <thead><tr><th>ID</th><th>Amount</th><th>Symbol</th><th>Recipient</th><th>Status</th><th>Time</th></tr></thead>
             <tbody id="payments-table">
-              <tr><td colspan="5" class="text-center text-muted">Loading…</td></tr>
+              <tr><td colspan="6" class="text-center">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -62,28 +72,39 @@
 {% block scripts %}
 <script>
 (function() {
+  document.getElementById('symbol-select').addEventListener('change', function() {
+    document.getElementById('symbol-other').style.display = this.value === 'other' ? 'block' : 'none';
+  });
   function loadRules() {
     fetch('/api/payment-rules').then(r => r.json()).then(d => {
       const list = document.getElementById('rules-list');
       const rules = d.rules || [];
       if (rules.length === 0) list.innerHTML = '<li class="list-group-item bg-transparent">No rules yet. Add one above.</li>';
-      else list.innerHTML = rules.map(r => '<li class="list-group-item bg-transparent">' + r.trigger_type + ' ' + r.trigger_value + ' → ' + r.amount + ' to ' + r.recipient.slice(0,10) + '…' + (r.ai_suggestion ? ' <small class="text-info">' + r.ai_suggestion + '</small>' : '') + '</li>').join('');
+      else list.innerHTML = rules.map(r => {
+        var sym = r.symbol || 'HSK';
+        return '<li class="list-group-item bg-transparent">' + r.trigger_type + ' ' + r.trigger_value + ' → ' + r.amount + ' ' + sym + ' to ' + r.recipient.slice(0,10) + '…' + (r.ai_suggestion ? ' <small class="text-info">' + r.ai_suggestion + '</small>' : '') + '</li>';
+      }).join('');
     }).catch(() => {});
   }
   function loadPayments() {
     fetch('/api/payments').then(r => r.json()).then(d => {
       const tbody = document.getElementById('payments-table');
       const payments = d.payments || [];
-      if (payments.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="text-center">No payments yet</td></tr>';
-      else tbody.innerHTML = payments.map(p => '<tr><td>' + (p.id||'') + '</td><td>' + (p.amount||'') + '</td><td><code>' + (p.recipient||'').slice(0,12) + '…</code></td><td>' + (p.status||'') + '</td><td>' + (p.timestamp||'') + '</td></tr>').join('');
+      if (payments.length === 0) tbody.innerHTML = '<tr><td colspan="6" class="text-center">No payments yet</td></tr>';
+      else tbody.innerHTML = payments.map(p => {
+        var sym = p.symbol || 'HSK';
+        return '<tr><td>' + (p.id||'') + '</td><td>' + (p.amount||'') + '</td><td>' + sym + '</td><td><code>' + (p.recipient||'').slice(0,12) + '…</code></td><td>' + (p.status||'') + '</td><td>' + (p.timestamp||'') + '</td></tr>';
+      }).join('');
     }).catch(() => {});
   }
   document.getElementById('rule-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const fd = new FormData(this);
-    const body = { trigger_type: fd.get('trigger_type'), trigger_value: fd.get('trigger_value') || '0', amount: fd.get('amount'), recipient: fd.get('recipient') };
+    var symbol = fd.get('symbol');
+    if (symbol === 'other') symbol = (fd.get('symbol_other') || 'HSK').trim().toUpperCase() || 'HSK';
+    const body = { trigger_type: fd.get('trigger_type'), trigger_value: fd.get('trigger_value') || '0', amount: fd.get('amount'), recipient: fd.get('recipient'), symbol: symbol || 'HSK' };
     fetch('/api/payment-rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      .then(r => r.json()).then(() => { loadRules(); this.reset(); }).catch(() => {});
+      .then(r => r.json()).then(() => { loadRules(); this.reset(); document.getElementById('symbol-other').style.display = 'none'; }).catch(() => {});
   });
   loadRules(); loadPayments();
   setInterval(function() { loadRules(); loadPayments(); }, 10000);
